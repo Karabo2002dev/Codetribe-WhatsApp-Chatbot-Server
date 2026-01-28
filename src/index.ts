@@ -1,7 +1,7 @@
 import app from "./app";
 import pool from "./config/db"; 
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const testConnection = async () => {
   try {
     await pool.query('SELECT NOW()');

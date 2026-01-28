@@ -32,7 +32,6 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/express-validator": "^2.20.33",
     "@types/morgan": "^1.9.10",
     "@types/node": "^25.0.10",
     "@types/pg": "^8.16.0",

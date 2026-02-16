@@ -31,7 +31,6 @@ export const register = async (
   return result.rows[0];
 };
 
-
 export const login = async (token: string): Promise<UserResponse> => {
 
   const decodedToken = await admin.auth().verifyIdToken(token);

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "ingest": "ts-node src/ingest/runIngestion.ts"
   },
   "repository": {
     "type": "git",
@@ -21,19 +22,24 @@
   },
   "homepage": "https://github.com/Karabo2002dev/Codetribe-WhatsApp-Chatbot-Server#readme",
   "dependencies": {
+    "@huggingface/inference": "^4.13.11",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-validator": "^7.3.1",
     "firebase-admin": "^13.6.0",
     "morgan": "^1.10.1",
-    "pg": "^8.17.2"
+    "nodemailer": "^8.0.1",
+    "pdfjs-dist": "^5.4.624",
+    "pg": "^8.18.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/morgan": "^1.9.10",
     "@types/node": "^25.0.10",
+    "@types/node-fetch": "^2.6.13",
+    "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",

@@ -2,7 +2,6 @@ import admin from "firebase-admin";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// IMPORTANT: private key newlines fix
 const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
 if (!admin.apps.length) {

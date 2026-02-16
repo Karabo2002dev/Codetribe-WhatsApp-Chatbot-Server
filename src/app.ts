@@ -5,16 +5,21 @@ import logger from "./middlewares/logger";
 import { notFoundHandler, errorHandler } from "./middlewares/errorHandler";
 import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes";
+import whatsappRoutes from "./routes/whatsappRoutes";
+import queryRoutes from "./routes/queryRoutes";
 
 dotenv.config();
 
 const app: Application = express();
 
 app.use(cors());
+app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(logger)
 
 app.use("/api/auth", authRoutes);
+app.use("/whatsapp", whatsappRoutes);
+app.use("/api/queries", queryRoutes);
 
 app.get("/", (req, res) => {
   res.send("CodeTribe WhatsApp Chatbot Server running");

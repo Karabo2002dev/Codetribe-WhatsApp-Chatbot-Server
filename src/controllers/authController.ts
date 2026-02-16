@@ -22,7 +22,7 @@ export const register = async (
       user,
     });
   } catch (err) {
-    next(err); // 🔥 send to global error handler
+    next(err);
   }
 };
 

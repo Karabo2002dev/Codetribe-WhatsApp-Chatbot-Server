@@ -1,5 +1,26 @@
 import pool from "../config/db";
 import { sendAssignmentEmail } from "./emailService";
+import { sendWhatsAppConfirmationMessage } from "./twilioService";
+import { setPendingConfirmation } from "./whatsappUserService";
+
+
+export async function findQueriesByFacilitator(facilitatorId: string | undefined) {
+  const { rows } = await pool.query(
+    `
+    SELECT
+      phone,
+      question,
+      status,
+      created_at
+    FROM queries
+    WHERE handled_by = $1
+    ORDER BY created_at DESC
+    `,
+    [facilitatorId]
+  );
+
+  return rows;
+}
 
 export async function escalateQuery(
   userUuid: string,
@@ -26,11 +47,24 @@ export async function escalateQuery(
 
 export const getAllQueries = async () => {
   const { rows } = await pool.query(`
-    SELECT * FROM queries
+    SELECT
+      q.id,
+      q.question,
+      q.response,
+      q.source,
+      u.fullname AS fullname,
+      q.created_at,
+      q.phone,
+      q.status
+    FROM queries q
+    LEFT JOIN users u
+      ON q.handled_by = u.id
+    ORDER BY q.created_at DESC
   `);
 
   return rows;
 };
+
 
 export const getQueryById = async (id: string | string[]) => {
   const { rows } = await pool.query(`SELECT * FROM queries WHERE id = $1`, [
@@ -47,7 +81,7 @@ export const updateQueryStatus = async (
   const { rows } = await pool.query(
     `
     UPDATE queries
-    SET status = $1, updated_at = NOW()
+    SET status = $1
     WHERE id = $2
     RETURNING *
     `,
@@ -113,4 +147,35 @@ export async function assignQueryToFreeFacilitator(
       email: facilitator.email,
     },
   };
+}
+
+export async function respondToQueryService(
+  queryId: string | string[],
+  response: string,
+) {
+  const { rows } = await pool.query(
+    `
+    UPDATE queries
+    SET
+      response = $1,
+      status = 'RESPONDED'
+    WHERE id = $2
+    RETURNING phone, user_uuid, id, response;
+    `,
+    [response, queryId]
+  );
+
+  if (!rows.length) throw new Error("Query not found or not assigned");
+
+  const learnerPhone = rows[0].phone;
+  const learnerUuid = rows[0].user_uuid;
+
+  await setPendingConfirmation(learnerUuid, queryId);
+
+  await sendWhatsAppConfirmationMessage(
+    learnerPhone,
+    response
+  );
+
+  return { success: true };
 }

@@ -18,11 +18,12 @@ export const verifyFirebaseToken = async (
     const decoded = await admin.auth().verifyIdToken(token);
 
     const { rows } = await pool.query(
-      "SELECT role FROM users WHERE firebase_uid = $1",
+      "SELECT id, role FROM users WHERE firebase_uid = $1",
       [decoded.uid]
     );
 
     req.user = {
+      id: rows[0]?.id,
       uid: decoded.uid,
       email: decoded.email,
       role: rows[0]?.role

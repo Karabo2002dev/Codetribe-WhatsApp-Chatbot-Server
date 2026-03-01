@@ -37,7 +37,7 @@ export async function whatsappWebhook(req: Request, res: Response) {
 
         return res.type("text/xml").send(`
           <Response>
-            <Message>Awesome ✅ I’ve marked your query as resolved.</Message>
+            <Message>Awesome ✅ I’ve marked your query as resolved. </Message>
           </Response>
         `);
       }

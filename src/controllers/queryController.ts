@@ -6,6 +6,7 @@ import { findQueriesByFacilitator, respondToQueryService } from "../services/que
 export async function getAssignedQueries(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const facilitatorId = req.user?.id;
+    console.log(`Fetching queries for facilitator ID: ${facilitatorId}`);
 
     const result = await findQueriesByFacilitator(facilitatorId);
 
@@ -49,11 +50,9 @@ export async function respondToQueryController(
   next: NextFunction 
 ) {
   try {
-    const { queryId } = req.params;
-    const { response } = req.body;
+    
+    const { response, queryId } = req.body;
     const facilitatorId = req.user?.id; // from auth middleware
-
-    console.log(queryId, response, facilitatorId)
 
     if (!response) {
       return res.status(400).json({ message: "Response is required" });
@@ -64,7 +63,7 @@ export async function respondToQueryController(
       response,
     );
 
-    res.json({ success: true });
+    res.json({ success: true, message: "Response sent to learner" });
   } catch (err) {
     next(err);
     

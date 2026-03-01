@@ -8,6 +8,7 @@ export async function findQueriesByFacilitator(facilitatorId: string | undefined
   const { rows } = await pool.query(
     `
     SELECT
+      id,
       phone,
       question,
       status,
@@ -150,9 +151,11 @@ export async function assignQueryToFreeFacilitator(
 }
 
 export async function respondToQueryService(
-  queryId: string | string[],
+  queryId: string,
   response: string,
 ) {
+
+  console.log(`Responding to query ${queryId} with response: ${response}`);
   const { rows } = await pool.query(
     `
     UPDATE queries

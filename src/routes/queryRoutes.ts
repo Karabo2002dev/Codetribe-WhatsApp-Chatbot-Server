@@ -17,11 +17,11 @@ router.get(
 );
 
 router.get("/:id", verifyFirebaseToken, roleAuth([Role.Admin, Role.Facilitator]), getQueryById);
-
-router.post("/:queryId/respond", verifyFirebaseToken, roleAuth([Role.Facilitator]), respondToQueryController);
-
-router.get("/assigned", verifyFirebaseToken, roleAuth([Role.Facilitator]), getAssignedQueries);
+router.get("/assigned/facilitator", verifyFirebaseToken, roleAuth([Role.Facilitator]), getAssignedQueries);
 router.get("/stats", verifyFirebaseToken, roleAuth([Role.Admin]), fetchQueryStats)
 router.get("/trend", verifyFirebaseToken, roleAuth([Role.Admin]), fetchQueryTrend)
+router.post("/respond", verifyFirebaseToken, roleAuth([Role.Facilitator]), respondToQueryController);
+
+
 
 export default router;

@@ -16,11 +16,13 @@ router.get(
   getAllQueries
 );
 
-router.get("/:id", verifyFirebaseToken, roleAuth([Role.Admin, Role.Facilitator]), getQueryById);
+
 router.get("/assigned/facilitator", verifyFirebaseToken, roleAuth([Role.Facilitator]), getAssignedQueries);
 router.get("/stats", verifyFirebaseToken, roleAuth([Role.Admin]), fetchQueryStats)
 router.get("/trend", verifyFirebaseToken, roleAuth([Role.Admin]), fetchQueryTrend)
 router.post("/respond", verifyFirebaseToken, roleAuth([Role.Facilitator]), respondToQueryController);
+
+router.get("/:id", verifyFirebaseToken, roleAuth([Role.Admin, Role.Facilitator]), getQueryById);
 
 
 

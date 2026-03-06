@@ -29,7 +29,7 @@ export async function insertVector(args: InsertVectorArgs) {
     INSERT INTO knowledge_base (content, embedding, source, doc_name, chunk_index)
     VALUES ($1, $2::vector, $3, $4, $5)
     `,
-    [content, vectorString, source, docName, chunkIndex],
+    [content, vectorString, source, docName, chunkIndex]
   );
 }
 
@@ -38,16 +38,21 @@ export type RetrievedChunk = {
   source: string;
   docName: string;
   chunkIndex: number;
-  distance: number; 
+  distance: number;
 };
 
 export async function similaritySearch(
   query: string,
-  limit = 5,
+  limit = 5
 ): Promise<RetrievedChunk[]> {
+  // Timing (helps you confirm if embedding or DB is slow)
+  console.time("⏱️ createEmbedding(query)");
   const embedding = await createEmbedding(query);
+  console.timeEnd("⏱️ createEmbedding(query)");
+
   const vectorString = `[${embedding.join(",")}]`;
 
+  console.time("⏱️ pgvector query");
   const res = await pool.query(
     `
     SELECT
@@ -60,11 +65,13 @@ export async function similaritySearch(
     ORDER BY embedding <-> $1::vector
     LIMIT $2
     `,
-    [vectorString, limit],
+    [vectorString, limit]
   );
+  console.timeEnd("⏱️ pgvector query");
+
   console.log(
     "Top distances:",
-    res.rows.map((r) => r.distance),
+    res.rows.map((r) => r.distance)
   );
 
   return res.rows as RetrievedChunk[];

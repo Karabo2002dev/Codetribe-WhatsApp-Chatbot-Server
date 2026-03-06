@@ -1,8 +1,18 @@
 import pool from "../config/db";
+import { Role } from "../types/role";
 
 export type Facilitator = {
   firebase_uid: string;
   email: string;
+};
+
+export type User = {
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: Date;
 };
 
 export async function registerUser(phone: string) {
@@ -14,6 +24,16 @@ export async function registerUser(phone: string) {
     `,
     [phone]
   );
+}
+
+export async function getAllUsers(): Promise<User[] | null> {
+  const { rows } = await pool.query<User>(`
+    SELECT email, fullname AS "fullName", phone_number AS "phoneNumber", role, is_active AS "isActive", created_at AS "createdAt"
+    FROM users
+  `);
+  
+  return rows;
+  
 }
 
 export async function getAvailableFacilitator(): Promise<Facilitator | null> {

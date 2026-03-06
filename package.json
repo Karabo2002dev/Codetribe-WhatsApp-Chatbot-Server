@@ -23,6 +23,7 @@
   "homepage": "https://github.com/Karabo2002dev/Codetribe-WhatsApp-Chatbot-Server#readme",
   "dependencies": {
     "@huggingface/inference": "^4.13.11",
+    "@supabase/supabase-js": "^2.98.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",

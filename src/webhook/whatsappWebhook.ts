@@ -1,20 +1,30 @@
 import { Request, Response } from "express";
-import { escapeXml } from "../utils/xml";
+import { twiml } from "twilio";
+
 import {
   registerWhatsAppUser,
   markPendingEscalation,
   clearPendingEscalation,
   clearPendingConfirmation,
 } from "../services/whatsappUserService";
+
 import {
   escalateQuery,
   assignQueryToFreeFacilitator,
   updateQueryStatus,
 } from "../services/queryService";
+
 import { ragEngine } from "../rag/ragEngine";
 import { generateGreeting } from "../utils/genarateGreetings";
 
 export async function whatsappWebhook(req: Request, res: Response) {
+  const messagingResponse = new twiml.MessagingResponse();
+
+  const sendMessage = (message: string) => {
+    messagingResponse.message(message);
+    return res.type("text/xml").send(messagingResponse.toString());
+  };
+
   try {
     const userMessage: string | undefined = req.body.Body;
     const userPhone: string | undefined = req.body.From;
@@ -25,21 +35,25 @@ export async function whatsappWebhook(req: Request, res: Response) {
 
     console.log(`📩 Incoming message from ${userPhone}: ${userMessage}`);
 
-    let user = await registerWhatsAppUser(userPhone);
+    const user = await registerWhatsAppUser(userPhone);
     console.log(`✅ User UUID: ${user.uuid}, Role: ${user.role}`);
 
-    if (user.pendingConfirmationQueryId) {
-      const normalized = userMessage.trim().toLowerCase();
+    const normalized = userMessage.trim().toLowerCase();
 
+    // ==============================
+    // Pending Confirmation
+    // ==============================
+    if (user.pendingConfirmationQueryId) {
       if (["yes", "y", "sure", "ok"].includes(normalized)) {
         await updateQueryStatus(user.pendingConfirmationQueryId, "RESOLVED");
         await clearPendingConfirmation(user.uuid);
 
-        return res.type("text/xml").send(`
-          <Response>
-            <Message>Awesome ✅ I’ve marked your query as resolved. </Message>
-          </Response>
-        `);
+        return sendMessage(
+          `Thank you for contacting CodeTribe Support! ✅
+
+Your query has been successfully marked as resolved.
+If you need any further assistance, feel free to reach out 😊`
+        );
       }
 
       if (["no", "n", "not really"].includes(normalized)) {
@@ -49,28 +63,26 @@ export async function whatsappWebhook(req: Request, res: Response) {
         );
         await clearPendingConfirmation(user.uuid);
 
-        return res.type("text/xml").send(`
-          <Response>
-            <Message>
-              Got it 👍 I’ve marked it as needs follow-up. A facilitator will respond again soon.
-            </Message>
-          </Response>
-        `);
+        return sendMessage(
+          `Thanks for letting me know 👍
+
+I’ve marked your query as needing follow-up.
+A facilitator will get back to you soon.`
+        );
       }
 
-      return res.type("text/xml").send(`
-        <Response>
-          <Message>
-            Please reply YES if the response solved your issue, or NO if you need follow-up.
-          </Message>
-        </Response>
-      `);
+      return sendMessage(
+        `Just to confirm 😊
+
+Reply YES if your issue is solved,
+or NO if you still need help.`
+      );
     }
 
-
+    // ==============================
+    // Pending Escalation
+    // ==============================
     if (user.pendingEscalation && user.pendingMessage) {
-      const normalized = userMessage.trim().toLowerCase();
-
       if (["yes", "y", "sure", "ok"].includes(normalized)) {
         const query = await escalateQuery(
           user.uuid,
@@ -86,82 +98,73 @@ export async function whatsappWebhook(req: Request, res: Response) {
           user.phone
         );
 
-        return res.type("text/xml").send(`
-          <Response>
-            <Message>
-              Got it 👌 Your query has been escalated to a facilitator.
-              They will respond shortly.
-            </Message>
-          </Response>
-        `);
+        return sendMessage(
+          `Perfect ✅
+
+Your query has been escalated to a facilitator.
+They will respond as soon as possible.`
+        );
       }
 
       if (["no", "n", "not now"].includes(normalized)) {
         await clearPendingEscalation(user.uuid);
 
-        return res.type("text/xml").send(`
-          <Response>
-            <Message>
-              No worries! Can you please clarify your question so I can try to help?
-            </Message>
-          </Response>
-        `);
+        return sendMessage(
+          `No problem 😊
+
+Please share more details and I’ll assist you.`
+        );
       }
 
-      return res.type("text/xml").send(`
-        <Response>
-          <Message>
-            Do you want me to escalate your previous question to a facilitator?
-            Please reply Yes or No.
-          </Message>
-        </Response>
-      `);
+      return sendMessage(
+        `Would you like me to escalate your previous question to a facilitator?
+
+Reply YES or NO.`
+      );
     }
 
-
+    // ==============================
+    // Greeting
+    // ==============================
     const greeting = generateGreeting(user, userMessage);
     if (greeting) {
-      return res.type("text/xml").send(`
-        <Response>
-          <Message>${escapeXml(greeting)}</Message>
-        </Response>
-      `);
+      return sendMessage(greeting);
     }
 
+    // ==============================
+    // RAG Flow
+    // ==============================
     const ragResult = await ragEngine(userMessage);
 
     if (ragResult.shouldEscalate) {
       await markPendingEscalation(user.uuid, userMessage);
 
-      return res.type("text/xml").send(`
-        <Response>
-          <Message>
-            Hmmm 🤔 I'm not sure I can answer that accurately.
-            Would you like me to escalate this question to a facilitator?
-            Please reply Yes or No.
-          </Message>
-        </Response>
-      `);
+      return sendMessage(
+        `Hmm 🤔 I may not fully understand your question.
+
+Could you clarify a bit more?
+
+If you'd prefer, I can escalate your question to a facilitator.
+
+Reply YES or NO.`
+      );
     }
 
     const friendlyAnswer =
-      ragResult.answer?.trim() ?? "Hello! How can I help you today?";
+      ragResult.answer?.trim() ??
+      "Hello! 😊 How can I help you today?";
 
-    return res.type("text/xml").send(`
-      <Response>
-        <Message>${escapeXml(friendlyAnswer)}</Message>
-      </Response>
-    `);
+    console.log(`💡 RAG answer for ${userPhone}: ${friendlyAnswer}`);
 
+    return sendMessage(friendlyAnswer);
   } catch (error) {
     console.error("❌ WhatsApp webhook error:", error);
 
-    return res.type("text/xml").send(`
-      <Response>
-        <Message>
-          Sorry, something went wrong. Please try again later.
-        </Message>
-      </Response>
-    `);
+    messagingResponse.message(
+      `Sorry 😥 Something went wrong on my side.
+Please try again in a moment.`
+    );
+
+    return res.type("text/xml").send(messagingResponse.toString());
   }
 }

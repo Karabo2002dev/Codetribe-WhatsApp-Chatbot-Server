@@ -35,7 +35,7 @@ export const login = async (token: string): Promise<UserResponse> => {
 
   const decodedToken = await admin.auth().verifyIdToken(token);
   const result = await pool.query<UserResponse>(
-    "SELECT id, email, role, fullname FROM users WHERE firebase_uid = $1",
+    "SELECT id, email,phone_number, role, fullname FROM users WHERE firebase_uid = $1",
     [decodedToken.uid]
   );
 

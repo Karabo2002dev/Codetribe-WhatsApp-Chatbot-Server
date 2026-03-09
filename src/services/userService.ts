@@ -7,12 +7,20 @@ export type Facilitator = {
 };
 
 export type User = {
+  id?: string;
   email: string;
   fullName: string;
   phoneNumber: string;
   role: Role;
   isActive: boolean;
   createdAt: Date;
+  updatedAt?: Date;
+};
+
+export type UpdateProfileInput = {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
 };
 
 export async function registerUser(phone: string) {
@@ -28,12 +36,19 @@ export async function registerUser(phone: string) {
 
 export async function getAllUsers(): Promise<User[] | null> {
   const { rows } = await pool.query<User>(`
-    SELECT email, fullname AS "fullName", phone_number AS "phoneNumber", role, is_active AS "isActive", created_at AS "createdAt"
+    SELECT 
+      id,
+      email,
+      fullname AS "fullName",
+      phone_number AS "phoneNumber",
+      role,
+      is_active AS "isActive",
+      created_at AS "createdAt",
+      updated_at AS "updatedAt"
     FROM users
   `);
-  
+
   return rows;
-  
 }
 
 export async function getAvailableFacilitator(): Promise<Facilitator | null> {
@@ -52,4 +67,92 @@ export async function getAvailableFacilitator(): Promise<Facilitator | null> {
   `);
 
   return rows[0] ?? null;
+}
+
+
+export async function getProfileById(id: string): Promise<User | null> {
+  const { rows } = await pool.query<User>(
+    `
+    SELECT
+      id,
+      email,
+      fullname AS "fullName",
+      phone_number AS "phoneNumber",
+      role,
+      is_active AS "isActive",
+      created_at AS "createdAt",
+      updated_at AS "updatedAt"
+    FROM users
+    WHERE id = $1
+    LIMIT 1
+    `,
+    [id]
+  );
+
+  return rows[0] ?? null;
+}
+
+export async function getProfileByEmail(email: string): Promise<User | null> {
+  const { rows } = await pool.query<User>(
+    `
+    SELECT
+      id,
+      email,
+      fullname AS "fullName",
+      phone_number AS "phoneNumber",
+      role,
+      is_active AS "isActive",
+      created_at AS "createdAt",
+      updated_at AS "updatedAt"
+    FROM users
+    WHERE email = $1
+    LIMIT 1
+    `,
+    [email]
+  );
+
+  return rows[0] ?? null;
+}
+
+export async function updateProfile(
+  id: string|undefined,
+  data: UpdateProfileInput
+): Promise<User | null> {
+  const { fullName, email, phoneNumber } = data;
+
+  const { rows } = await pool.query<User>(
+    `
+    UPDATE users
+    SET
+      fullname = $1,
+      email = $2,
+      phone_number = $3,
+      updated_at = NOW()
+    WHERE id = $4
+    RETURNING
+      id,
+      email,
+      fullname AS "fullName",
+      phone_number AS "phoneNumber",
+      role,
+      is_active AS "isActive",
+      created_at AS "createdAt",
+      updated_at AS "updatedAt"
+    `,
+    [fullName, email, phoneNumber, id]
+  );
+
+  return rows[0] ?? null;
+}
+
+export async function deleteProfile(id: string | undefined): Promise<boolean> {
+  const result = await pool.query(
+    `
+    DELETE FROM users
+    WHERE id = $1
+    `,
+    [id]
+  );
+
+  return (result.rowCount ?? 0) > 0;
 }

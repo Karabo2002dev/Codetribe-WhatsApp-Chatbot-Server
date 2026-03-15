@@ -43,8 +43,7 @@ export async function getAllUsers(): Promise<User[] | null> {
       phone_number AS "phoneNumber",
       role,
       is_active AS "isActive",
-      created_at AS "createdAt",
-      updated_at AS "updatedAt"
+      created_at AS "createdAt"
     FROM users
   `);
 
@@ -80,8 +79,7 @@ export async function getProfileById(id: string): Promise<User | null> {
       phone_number AS "phoneNumber",
       role,
       is_active AS "isActive",
-      created_at AS "createdAt",
-      updated_at AS "updatedAt"
+      created_at AS "createdAt"
     FROM users
     WHERE id = $1
     LIMIT 1
@@ -119,6 +117,7 @@ export async function updateProfile(
   data: UpdateProfileInput
 ): Promise<User | null> {
   const { fullName, email, phoneNumber } = data;
+  console.log(`Updating profile for user ID: ${id} with data:`, data);
 
   const { rows } = await pool.query<User>(
     `
@@ -126,8 +125,7 @@ export async function updateProfile(
     SET
       fullname = $1,
       email = $2,
-      phone_number = $3,
-      updated_at = NOW()
+      phone_number = $3
     WHERE id = $4
     RETURNING
       id,
@@ -136,13 +134,13 @@ export async function updateProfile(
       phone_number AS "phoneNumber",
       role,
       is_active AS "isActive",
-      created_at AS "createdAt",
-      updated_at AS "updatedAt"
+      created_at AS "createdAt"
     `,
     [fullName, email, phoneNumber, id]
   );
-
+  console.log(rows)
   return rows[0] ?? null;
+
 }
 
 export async function deleteProfile(id: string | undefined): Promise<boolean> {

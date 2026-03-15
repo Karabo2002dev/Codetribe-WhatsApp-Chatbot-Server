@@ -97,57 +97,74 @@ export async function assignQueryToFreeFacilitator(
   question: string,
   phone: string,
 ) {
+  const client = await pool.connect();
 
-  const normalizedQueryId = Array.isArray(queryId) ? queryId[0] : queryId;
+  try {
+    await client.query("BEGIN");
 
-  const { rows: freeFacilitators } = await pool.query(`
-    SELECT u.id, u.email
-    FROM users u
-    WHERE u.role = 'FACILITATOR'
-      AND NOT EXISTS (
-        SELECT 1
-        FROM queries q
-        WHERE q.handled_by = u.id
-          AND q.status IN ('OPEN', 'ESCALATED')
-      )
-    ORDER BY u.created_at ASC
-    LIMIT 1
-  `);
+    const normalizedQueryId = Array.isArray(queryId) ? queryId[0] : queryId;
 
-  if (!freeFacilitators || freeFacilitators.length === 0) {
-    throw new Error("No free facilitator available for assignment");
+    const { rows: facilitators } = await client.query(
+      `
+      SELECT 
+        u.id,
+        u.email,
+        COUNT(q.id) AS active_queries
+      FROM users u
+      LEFT JOIN queries q 
+        ON q.handled_by = u.id
+        AND q.status IN ('OPEN','ESCALATED')
+      WHERE u.role = 'FACILITATOR'
+      GROUP BY u.id, u.email
+      HAVING COUNT(q.id) < 20
+      ORDER BY active_queries ASC, u.created_at ASC
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+      `
+    );
+
+    if (facilitators.length === 0) {
+      throw new Error("No facilitator available (all have 20 active queries)");
+    }
+
+    const facilitator = facilitators[0];
+
+    const { rows } = await client.query(
+      `
+      UPDATE queries
+      SET handled_by = $1,
+          status = 'ESCALATED'
+      WHERE id = $2
+      RETURNING *
+      `,
+      [facilitator.id, normalizedQueryId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error("Query not found");
+    }
+
+    await client.query("COMMIT");
+
+    await sendAssignmentEmail(facilitator.email, question, phone);
+
+    console.log(
+      `📧 Query ${normalizedQueryId} assigned to ${facilitator.email} (load: ${facilitator.active_queries})`
+    );
+
+    return {
+      query: rows[0],
+      facilitator: {
+        id: facilitator.id,
+        email: facilitator.email,
+      },
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
-
-  const facilitator = freeFacilitators[0];
-
-  const { rows } = await pool.query(
-    `
-    UPDATE queries
-    SET handled_by = $1,
-        status = 'ESCALATED'
-    WHERE id = $2
-    RETURNING *
-    `,
-    [facilitator.id, normalizedQueryId],
-  );
-
-  if (rows.length === 0) {
-    throw new Error("Query not found");
-  }
-
-  await sendAssignmentEmail(facilitator.email, question, phone);
-  console.log(
-    `📧 Assigned query ${normalizedQueryId} sent to ${facilitator.email}`,
-  );
-
-  return {
-    query: rows[0],
-    facilitator: {
-      id: facilitator.id,
-      uuid: facilitator.uuid,
-      email: facilitator.email,
-    },
-  };
 }
 
 export async function respondToQueryService(

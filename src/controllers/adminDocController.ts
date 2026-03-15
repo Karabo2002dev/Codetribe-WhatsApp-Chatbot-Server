@@ -6,7 +6,7 @@ function getStoragePath(docKey: string) {
   return `${docKey}`;
 }
 
-// GET /admin/doc?docKey=codetribe_kb
+
 export async function getAdminDoc(req: Request, res: Response) {
   try {
     const docKey = String(req.query.docKey || "").trim();

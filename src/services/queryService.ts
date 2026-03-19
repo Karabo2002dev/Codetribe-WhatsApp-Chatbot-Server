@@ -1,5 +1,5 @@
 import pool from "../config/db";
-import { sendAssignmentEmail } from "./emailService";
+import { sendAssignmentEmail, sendFollowUpEmail } from "./emailService";
 import { sendWhatsAppConfirmationMessage } from "./twilioService";
 import { setPendingConfirmation } from "./whatsappUserService";
 
@@ -106,18 +106,24 @@ export async function assignQueryToFreeFacilitator(
 
     const { rows: facilitators } = await client.query(
       `
-      SELECT 
+      SELECT
         u.id,
         u.email,
-        COUNT(q.id) AS active_queries
+        (
+          SELECT COUNT(*)
+          FROM queries q
+          WHERE q.handled_by = u.id
+            AND q.status IN ('OPEN', 'ESCALATED')
+        ) AS active_queries
       FROM users u
-      LEFT JOIN queries q 
-        ON q.handled_by = u.id
-        AND q.status IN ('OPEN','ESCALATED')
       WHERE u.role = 'FACILITATOR'
-      GROUP BY u.id, u.email
-      HAVING COUNT(q.id) < 20
-      ORDER BY active_queries ASC, u.created_at ASC
+        AND (
+          SELECT COUNT(*)
+          FROM queries q
+          WHERE q.handled_by = u.id
+            AND q.status IN ('OPEN', 'ESCALATED')
+        ) < 20
+      ORDER BY u.created_at ASC
       LIMIT 1
       FOR UPDATE SKIP LOCKED
       `
@@ -198,4 +204,48 @@ export async function respondToQueryService(
   );
 
   return { success: true };
+}
+
+
+export async function notifyAssignedFacilitatorForFollowUp(
+  queryId: string,
+  learnerPhone: string
+) {
+  const { rows } = await pool.query(
+    `
+    SELECT
+      q.id,
+      q.question,
+      q.status,
+      u.id AS facilitator_id,
+      u.email AS facilitator_email
+    FROM queries q
+    INNER JOIN users u
+      ON u.id = q.handled_by
+    WHERE q.id = $1
+    LIMIT 1
+    `,
+    [queryId]
+  );
+
+  if (rows.length === 0) {
+    console.warn(`No assigned facilitator found for query ${queryId}`);
+    return null;
+  }
+
+  const query = rows[0];
+
+  await sendFollowUpEmail(
+    query.facilitator_email,
+    query.question,
+    learnerPhone
+  );
+
+  return {
+    queryId: query.id,
+    facilitator: {
+      id: query.facilitator_id,
+      email: query.facilitator_email,
+    },
+  };
 }

@@ -12,6 +12,7 @@ import {
   escalateQuery,
   assignQueryToFreeFacilitator,
   updateQueryStatus,
+  notifyAssignedFacilitatorForFollowUp,
 } from "../services/queryService";
 
 import { ragEngine } from "../rag/ragEngine";
@@ -60,7 +61,13 @@ If you need any further assistance, feel free to reach out 😊`
         await updateQueryStatus(
           user.pendingConfirmationQueryId,
           "NEEDS_FOLLOWUP"
+        ); 
+
+        await notifyAssignedFacilitatorForFollowUp(
+          user.pendingConfirmationQueryId,
+          user.phone
         );
+        
         await clearPendingConfirmation(user.uuid);
 
         return sendMessage(

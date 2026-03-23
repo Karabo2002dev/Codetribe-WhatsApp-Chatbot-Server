@@ -52,7 +52,7 @@ export async function sendAssignmentEmail(
       </div>
       `,
     });
-    coonsole.log(dashboardUrl)
+    console.log(dashboardUrl)
     console.log("✅ Assignment email sent");
   } catch (error) {
     console.error("❌ Email error:", error);

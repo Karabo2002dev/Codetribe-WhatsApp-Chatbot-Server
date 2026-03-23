@@ -1,175 +1,83 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+
 export async function sendAssignmentEmail(
   email: string,
   question: string,
-  phone: string,
+  phone: string
 ) {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+  try {
+    await resend.emails.send({
+      from: "WhatsApp Support Bot <onboarding@resend.dev>",
+      to: email,
+      subject: "📩 New WhatsApp Query Assigned",
+      html: `
+      <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
+        <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;">
+          
+          <div style="background-color: #0f9d58; color: #fff; padding: 20px; text-align: center;">
+            <h2>📬 New WhatsApp Query Assigned</h2>
+          </div>
 
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
+          <div style="padding: 20px;">
+            <p>Hello 👋,</p>
+            <p>You have been assigned a new WhatsApp query.</p>
 
-  await transporter.verify();
-  console.log("✅ Email server ready");
+            <p><strong>📞 From:</strong> ${phone}</p>
+            <p><strong>❓ Question:</strong> ${question}</p>
+            <p><strong>🕒 Date:</strong> ${new Date().toLocaleDateString()}</p>
 
-  await transporter.sendMail({
-    from: `"WhatsApp Support Bot" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "📩 New WhatsApp Query Assigned",
-    html: `
-    <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
-      <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-        
-        <!-- Header -->
-        <div style="background-color: #0f9d58; color: #fff; padding: 20px; text-align: center;">
-          <h2 style="margin: 0; font-size: 22px;">📬 New WhatsApp Query Assigned</h2>
-        </div>
-
-        <!-- Body -->
-        <div style="padding: 20px;">
-          <p>Hello 👋,</p>
-          <p>You have been assigned a new WhatsApp query. Please review and respond promptly. ✅</p>
-
-          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-            <tr>
-              <td style="padding: 8px; font-weight: bold; width: 120px;">📞 From:</td>
-              <td style="padding: 8px;">${phone}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; font-weight: bold;">❓ Question:</td>
-              <td style="padding: 8px; border-left: 3px solid #0f9d58; padding-left: 10px;">${question}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; font-weight: bold;">🕒 Date:</td>
-              <td style="padding: 8px;">${new Date().toLocaleDateString(
-                "en-US",
-                {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                },
-              )}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; font-weight: bold;">⚡ Status:</td>
-              <td style="padding: 8px; border-left: 3px solid #facc15; padding-left: 10px;">Open</td>
-            </tr>
-          </table>
-
-          <p style="margin-top: 20px;">
-            <a href="${process.env.FACILITATOR_DASHBOARD_URL}" 
-               style="
-                 display: inline-block;
-                 background-color: #0f9d58;
-                 color: #fff;
-                 padding: 12px 24px;
-                 border-radius: 6px;
-                 text-decoration: none;
-                 font-weight: bold;
-               ">
-              👀 View & Respond to Query
+            <a href="${process.env.FACILITATOR_DASHBOARD_URL}"
+              style="display:inline-block;margin-top:15px;background:#0f9d58;color:white;padding:12px 20px;border-radius:6px;text-decoration:none;">
+              👀 View & Respond
             </a>
-          </p>
-
-          <p style="margin-top: 20px; font-size: 12px; color: #888;">
-            This is an automated message. Please do not reply directly to this email.
-          </p>
+          </div>
         </div>
-
-        <!-- Footer -->
-        <div style="background-color: #f0f0f0; padding: 10px; text-align: center; font-size: 12px; color: #555;">
-          &copy; ${new Date().getFullYear()} WhatsApp Support. All rights reserved.
-        </div>
-
       </div>
-    </div>
-  `,
-  });
+      `,
+    });
+
+    console.log("✅ Assignment email sent");
+  } catch (error) {
+    console.error("❌ Email error:", error);
+  }
 }
+
 
 export async function sendFollowUpEmail(
   email: string,
   question: string,
   phone: string
 ) {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
+  try {
+    await resend.emails.send({
+      from: "WhatsApp Support Bot <onboarding@resend.dev>",
+      to: email,
+      subject: "🔁 Query Needs Follow Up",
+      html: `
+      <div style="font-family: Arial, sans-serif;">
+        <h2>🔁 Query Needs Follow Up</h2>
 
-  await transporter.sendMail({
-    from: `"WhatsApp Support Bot" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "🔁 Query Needs Follow Up",
-    html: `
-    <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
-      <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-        
-        <!-- Header -->
-        <div style="background-color: #f59e0b; color: #fff; padding: 20px; text-align: center;">
-          <h2 style="margin: 0;">🔁 Query Needs Follow Up</h2>
-        </div>
+        <p>The issue is not resolved.</p>
 
-        <div style="padding: 20px;">
-          <p>Hello 👋,</p>
+        <p><strong>📞 Student:</strong> ${phone}</p>
+        <p><strong>❓ Question:</strong> ${question}</p>
 
-          <p>
-            The student indicated that their issue is <strong>not resolved</strong>.
-            Please follow up on this query.
-          </p>
-
-          <table style="width:100%; border-collapse: collapse; margin-top: 15px;">
-            <tr>
-              <td style="padding: 8px; font-weight: bold;">📞 Student:</td>
-              <td style="padding: 8px;">${phone}</td>
-            </tr>
-
-            <tr>
-              <td style="padding: 8px; font-weight: bold;">❓ Question:</td>
-              <td style="padding: 8px;">${question}</td>
-            </tr>
-
-            <tr>
-              <td style="padding: 8px; font-weight: bold;">⚠️ Status:</td>
-              <td style="padding: 8px;">Needs Follow Up</td>
-            </tr>
-          </table>
-
-          <p style="margin-top:20px;">
-            <a href="${process.env.FACILITATOR_DASHBOARD_URL}"
-              style="background:#f59e0b;color:white;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">
-              Open Facilitator Dashboard
-            </a>
-          </p>
-
-          <p style="font-size:12px;color:#888;margin-top:20px;">
-            Automated message from WhatsApp Support System.
-          </p>
-        </div>
-
+        <a href="${process.env.FACILITATOR_DASHBOARD_URL}">
+          Open Dashboard
+        </a>
       </div>
-    </div>
-    `,
-  });
+      `,
+    });
+
+    console.log("✅ Follow-up email sent");
+  } catch (error) {
+    console.error("❌ Email error:", error);
+  }
 }
+

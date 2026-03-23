@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const adminDocController_1 = require("../controllers/adminDocController");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const roleMiddleware_1 = require("../middlewares/roleMiddleware");
+const role_1 = require("../types/role");
+const router = (0, express_1.Router)();
+router.get("/doc", authMiddleware_1.verifyFirebaseToken, (0, roleMiddleware_1.roleAuth)([role_1.Role.Admin]), adminDocController_1.getAdminDoc);
+router.post("/doc", authMiddleware_1.verifyFirebaseToken, (0, roleMiddleware_1.roleAuth)([role_1.Role.Admin]), adminDocController_1.saveAdminDoc);
+exports.default = router;

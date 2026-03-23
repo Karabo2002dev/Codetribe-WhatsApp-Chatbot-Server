@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const role_1 = require("../types/role");
+const express_1 = require("express");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const roleMiddleware_1 = require("../middlewares/roleMiddleware");
+const queryController_1 = require("../controllers/queryController");
+const queryStatsController_1 = require("../controllers/queryStatsController");
+const queryTrendController_1 = require("../controllers/queryTrendController");
+const queryController_2 = require("../controllers/queryController");
+const router = (0, express_1.Router)();
+router.get("/", authMiddleware_1.verifyFirebaseToken, (0, roleMiddleware_1.roleAuth)([role_1.Role.Admin, role_1.Role.Facilitator]), queryController_1.getAllQueries);
+router.get("/assigned/facilitator", authMiddleware_1.verifyFirebaseToken, (0, roleMiddleware_1.roleAuth)([role_1.Role.Facilitator]), queryController_1.getAssignedQueries);
+router.get("/stats", authMiddleware_1.verifyFirebaseToken, (0, roleMiddleware_1.roleAuth)([role_1.Role.Admin]), queryStatsController_1.fetchQueryStats);
+router.get("/trend", authMiddleware_1.verifyFirebaseToken, (0, roleMiddleware_1.roleAuth)([role_1.Role.Admin]), queryTrendController_1.fetchQueryTrend);
+router.post("/respond", authMiddleware_1.verifyFirebaseToken, (0, roleMiddleware_1.roleAuth)([role_1.Role.Facilitator]), queryController_2.respondToQueryController);
+router.get("/:id", authMiddleware_1.verifyFirebaseToken, (0, roleMiddleware_1.roleAuth)([role_1.Role.Admin, role_1.Role.Facilitator]), queryController_1.getQueryById);
+exports.default = router;

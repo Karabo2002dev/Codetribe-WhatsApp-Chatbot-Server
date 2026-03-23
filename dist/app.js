@@ -1,0 +1,33 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+require("./config/firebase");
+const cors_1 = __importDefault(require("cors"));
+const logger_1 = __importDefault(require("./middlewares/logger"));
+const errorHandler_1 = require("./middlewares/errorHandler");
+const dotenv_1 = __importDefault(require("dotenv"));
+const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const whatsappRoutes_1 = __importDefault(require("./routes/whatsappRoutes"));
+const queryRoutes_1 = __importDefault(require("./routes/queryRoutes"));
+const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
+const adminDocRoutes_1 = __importDefault(require("./routes/adminDocRoutes"));
+dotenv_1.default.config();
+const app = (0, express_1.default)();
+app.use((0, cors_1.default)());
+app.use(express_1.default.urlencoded({ extended: false }));
+app.use(express_1.default.json());
+app.use(logger_1.default);
+app.use("/api/auth", authRoutes_1.default);
+app.use("/api/users", userRoutes_1.default);
+app.use("/whatsapp", whatsappRoutes_1.default);
+app.use("/api/admin", adminDocRoutes_1.default);
+app.use("/api/queries", queryRoutes_1.default);
+app.get("/", (req, res) => {
+    res.send("CodeTribe WhatsApp Chatbot Server running");
+});
+app.use(errorHandler_1.notFoundHandler);
+app.use(errorHandler_1.errorHandler);
+exports.default = app;
